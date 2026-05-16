@@ -1,0 +1,41 @@
+# ---------------- Visual Studio ----------------
+.vs/
+*.VC.db
+*.VC.opendb
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.slnx
+*.vcxproj
+*.vcxproj.filters
+
+# ---------------- Build folders ----------------
+**/build/
+x64/
+x86/
+Debug/
+Release/
+out/
+devbin/
+
+# ---------------- IDE ----------------
+.vscode/
+
+# ---------------- CMake ----------------
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+Testing/
+
+# ---------------- Binaries ----------------
+*.exe
+*.out
+*.app
+*.dll
+*.pdb
+*.ilk
+
+# ---------------- Logs ----------------
+*.log
