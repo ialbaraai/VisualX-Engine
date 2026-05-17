@@ -58,14 +58,14 @@ namespace VX
 
 		VX::LuaManager p_LuaManager;
 	public:
-		Game(const std::string& WindowTitle, const WindowSize& size, const Color& color, std::vector<Entity>& entities, const std::string& script);
+		Game();
 		~Game();
 
 		void HandleInput(const SDL_Event& event);
 
 		void HandleRender();
 
-		void loop();
+		void loop(const std::string& WindowTitle, const WindowSize& size, const Color& color, std::vector<Entity>& entities, const std::string& script);
 		RunResult end();
 	};
 }

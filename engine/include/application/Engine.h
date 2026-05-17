@@ -15,12 +15,15 @@ namespace VX
 	private:
 		std::string input = "";
 		char choice;
-		bool is_sdl;
 		vxs width;
 		vxs height;
 		vxm theme;
+
+		int selection;
+
+		bool engine_running = false;
 	public:
 		Engine();
-		void run();
+		int run();
 	};
 };

@@ -56,3 +56,10 @@ add_custom_command(TARGET VisualXEngine POST_BUILD
     ${PROJECT_ROOT}/assets
     $<TARGET_FILE_DIR:VisualXEngine>/assets
 )
+add_custom_command(
+    TARGET VisualXEngine
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${PROJECT_ROOT}/games.txt
+            $<TARGET_FILE_DIR:VisualXEngine>/games.txt
+)   

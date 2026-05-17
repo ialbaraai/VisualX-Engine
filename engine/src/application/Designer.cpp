@@ -33,6 +33,11 @@ VX::Designer::Designer(const std::string& Filepath, vxm Theme)
 
 void VX::Designer::run()
 {
+	if (!SDL_Init(SDL_INIT_VIDEO))
+	{
+		return;
+	}
+
 	std::string filepath = this->p_Filepath;
 	std::string title = "VX Editor - " + this->p_Filepath;
 	
@@ -1049,15 +1054,21 @@ void VX::Designer::run()
 
 			SDL_DestroyRenderer(this->p_Renderer);
 			SDL_DestroyWindow(this->p_Window);
+
+			SDL_Quit();
 		}
 		else
 		{
 			SDL_DestroyWindow(this->p_Window);
+
+			SDL_Quit();
 		}
 	}
 	else
 	{
 		std::cout << "[CPP]: Failed to initialize editor!\n";
+
+		SDL_Quit();
 	}
 }
 

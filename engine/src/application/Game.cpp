@@ -1,6 +1,110 @@
 #include "../../include/application/Game.h"
 
-VX::Game::Game(const std::string& WindowTitle, const WindowSize& size, const Color& color, std::vector<Entity>& entities, const std::string& script)
+VX::Game::Game()
+{
+	
+}
+VX::Game::~Game()
+{
+	sol::table ents = this->p_LuaManager.LuaState["Entities"];
+	ents.clear();
+
+	this->p_EntitiesHandler.Cleanup();
+}
+
+void VX::Game::HandleInput(const SDL_Event& event)
+{
+	if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
+	{
+		this->p_IsRunning = false;
+	}
+	if (event.type == SDL_EVENT_KEY_DOWN)
+	{
+		this->p_CurrentKeys.insert(event.key.key);
+	}
+	if (event.type == SDL_EVENT_KEY_UP)
+	{
+		this->p_CurrentKeys.erase(event.key.key);
+	}
+
+	if (event.type == SDL_EVENT_MOUSE_MOTION)
+	{
+		this->p_MouseX = event.motion.x;
+		this->p_MouseY = event.motion.y;
+
+		this->p_LuaManager.LuaState["Mouse"]["X"] = this->p_MouseX;
+		this->p_LuaManager.LuaState["Mouse"]["Y"] = this->p_MouseY;
+	}
+
+	if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
+	{
+		if (event.button.button == SDL_BUTTON_LEFT)
+		{
+			this->p_IsMouseLeftDown = true;
+		}
+		if (event.button.button == SDL_BUTTON_RIGHT)
+		{
+			this->p_IsMouseRightDown = true;
+		}
+		if (event.button.button == SDL_BUTTON_MIDDLE)
+		{
+			this->p_IsMouseMiddleDown = true;
+		}
+	}
+	if (event.type == SDL_EVENT_MOUSE_BUTTON_UP)
+	{
+		if (event.button.button == SDL_BUTTON_LEFT)
+		{
+			this->p_IsMouseLeftUp = true;
+			this->p_IsMouseLeftHeld = false;
+			this->p_IsMouseLeftDown = false;
+		}
+		if (event.button.button == SDL_BUTTON_RIGHT)
+		{
+			this->p_IsMouseRightUp = true;
+			this->p_IsMouseRightHeld = false;
+			this->p_IsMouseRightDown = false;
+		}
+		if (event.button.button == SDL_BUTTON_MIDDLE)
+		{
+			this->p_IsMouseMiddleUp = true;
+			this->p_IsMouseMiddleHeld = false;
+			this->p_IsMouseMiddleDown = false;
+		}
+	}
+}
+
+
+void VX::Game::HandleRender()
+{
+	SDL_SetRenderDrawColor(this->p_Renderer, this->p_WindowColor.Red, this->p_WindowColor.Green, this->p_WindowColor.Blue, this->p_WindowColor.Alpha);
+	SDL_RenderClear(this->p_Renderer);
+
+	for (std::shared_ptr<EntityHandler>& handle : this->p_EntitiesHandler.entities)
+	{
+		if (!handle) continue;
+		if (!handle->p_Pointer) continue;
+		if (!handle->Get_IsAlive()) continue;
+		//if (entity->Get_Position().X > this->p_WindowSize->X) continue;
+		//if (entity->Get_Position().Y > this->p_WindowSize->Y) continue;
+
+		SDL_SetRenderDrawColor(this->p_Renderer, handle->Get_Color().Red, handle->Get_Color().Green, handle->Get_Color().Blue, handle->Get_Color().Alpha);
+		SDL_FRect entityRectangle = { handle->Get_Position().X, handle->Get_Position().Y, handle->Get_Size().X, handle->Get_Size().Y };
+
+		if (handle->Get_Sprite().IsImage)
+		{
+			SDL_RenderTexture(this->p_Renderer, handle->Get_Sprite().Texture, nullptr, &entityRectangle);
+		}
+		else
+		{
+			SDL_RenderFillRect(this->p_Renderer, &entityRectangle);
+		}
+	}
+
+	SDL_RenderPresent(this->p_Renderer);
+}
+
+void VX::Game::loop(const std::string& WindowTitle, const WindowSize& size, const Color& color, std::vector<Entity>& entities, const std::string& script)
 {
 	this->p_GameName = WindowTitle;
 	this->p_WindowTitle = "VX Launcher - " + WindowTitle;
@@ -13,6 +117,31 @@ VX::Game::Game(const std::string& WindowTitle, const WindowSize& size, const Col
 
 	this->p_FPS = 60.0;
 	this->p_FrameDuration = 1000.0 / this->p_FPS;
+
+	if (!SDL_Init(SDL_INIT_VIDEO)) return;
+
+	this->p_Window = SDL_CreateWindow(this->p_WindowTitle.c_str(), this->p_WindowSize.X, this->p_WindowSize.Y, 0);
+	
+	if (!this->p_Window)
+	{
+		std::cerr << "SDL_CreateWindow Error: " << SDL_GetError() << '\n';
+
+		SDL_Quit();
+
+		return;
+	}
+
+	this->p_Renderer = SDL_CreateRenderer(this->p_Window, nullptr);
+
+	if (!this->p_Renderer)
+	{
+		std::cerr << "SDL_CreateRenderer Error: " << SDL_GetError() << '\n';
+
+		SDL_DestroyWindow(this->p_Window);
+		SDL_Quit();
+
+		return;
+	}
 
 	this->p_LuaManager.LuaState.set_function("VX_ThirtyFPS", []() -> float { return 30.0f; });
 	this->p_LuaManager.LuaState.set_function("VX_FourtyEightFPS", []() -> float { return 48.0f; });
@@ -168,25 +297,6 @@ VX::Game::Game(const std::string& WindowTitle, const WindowSize& size, const Col
 
 	this->p_LuaManager.LuaState.set_function("VX_Quit", [this]() {this->p_IsRunning = false; });
 
-	this->p_Window = SDL_CreateWindow(this->p_WindowTitle.c_str(), this->p_WindowSize.X, this->p_WindowSize.Y, 0);
-	
-	if (!this->p_Window)
-	{
-		std::cerr << "SDL_CreateWindow Error: " << SDL_GetError() << '\n';
-		return;
-	}
-
-	this->p_Renderer = SDL_CreateRenderer(this->p_Window, nullptr);
-
-	if (!this->p_Renderer)
-	{
-		std::cerr << "SDL_CreateRenderer Error: " << SDL_GetError() << '\n';
-
-		SDL_DestroyWindow(this->p_Window);
-
-		return;
-	}
-
 	this->p_LuaManager.LuaState.set_function("VX_SetImage", [this](int Id, const std::string& NewImage) -> bool {
 		std::shared_ptr<EntityHandler> handle = this->p_EntitiesHandler.FindEntityById(Id);
 		
@@ -239,7 +349,7 @@ VX::Game::Game(const std::string& WindowTitle, const WindowSize& size, const Col
 		}
 		});
 
-	for (Entity& entity : entities)
+	for (Entity& entity : this->p_Entities)
 	{
 		if (!this->p_EntitiesHandler.FindEntityById(entity.Get_Id()))
 		{
@@ -260,114 +370,9 @@ VX::Game::Game(const std::string& WindowTitle, const WindowSize& size, const Col
 	}
 	catch (const std::exception& e)
 	{
-		SDL_DestroyRenderer(this->p_Renderer);
-		SDL_DestroyWindow(this->p_Window);
-
-		std::cerr << "This Talk Not Walk Error: Failed to load script: " << script << '\n';
-	}
-}
-VX::Game::~Game()
-{
-	sol::table ents = this->p_LuaManager.LuaState["Entities"];
-	ents.clear();
-
-	this->p_EntitiesHandler.Cleanup();
-}
-
-void VX::Game::HandleInput(const SDL_Event& event)
-{
-	if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
-	{
-		this->p_IsRunning = false;
-	}
-	if (event.type == SDL_EVENT_KEY_DOWN)
-	{
-		this->p_CurrentKeys.insert(event.key.key);
-	}
-	if (event.type == SDL_EVENT_KEY_UP)
-	{
-		this->p_CurrentKeys.erase(event.key.key);
+		std::cerr << "This Talk Not Walk Error: Failed to load script: " << this->p_LuaManager.File << '\n';
 	}
 
-	if (event.type == SDL_EVENT_MOUSE_MOTION)
-	{
-		this->p_MouseX = event.motion.x;
-		this->p_MouseY = event.motion.y;
-
-		this->p_LuaManager.LuaState["Mouse"]["X"] = this->p_MouseX;
-		this->p_LuaManager.LuaState["Mouse"]["Y"] = this->p_MouseY;
-	}
-
-	if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
-	{
-		if (event.button.button == SDL_BUTTON_LEFT)
-		{
-			this->p_IsMouseLeftDown = true;
-		}
-		if (event.button.button == SDL_BUTTON_RIGHT)
-		{
-			this->p_IsMouseRightDown = true;
-		}
-		if (event.button.button == SDL_BUTTON_MIDDLE)
-		{
-			this->p_IsMouseMiddleDown = true;
-		}
-	}
-	if (event.type == SDL_EVENT_MOUSE_BUTTON_UP)
-	{
-		if (event.button.button == SDL_BUTTON_LEFT)
-		{
-			this->p_IsMouseLeftUp = true;
-			this->p_IsMouseLeftHeld = false;
-			this->p_IsMouseLeftDown = false;
-		}
-		if (event.button.button == SDL_BUTTON_RIGHT)
-		{
-			this->p_IsMouseRightUp = true;
-			this->p_IsMouseRightHeld = false;
-			this->p_IsMouseRightDown = false;
-		}
-		if (event.button.button == SDL_BUTTON_MIDDLE)
-		{
-			this->p_IsMouseMiddleUp = true;
-			this->p_IsMouseMiddleHeld = false;
-			this->p_IsMouseMiddleDown = false;
-		}
-	}
-}
-
-
-void VX::Game::HandleRender()
-{
-	SDL_SetRenderDrawColor(this->p_Renderer, this->p_WindowColor.Red, this->p_WindowColor.Green, this->p_WindowColor.Blue, this->p_WindowColor.Alpha);
-	SDL_RenderClear(this->p_Renderer);
-
-	for (std::shared_ptr<EntityHandler>& handle : this->p_EntitiesHandler.entities)
-	{
-		if (!handle) continue;
-		if (!handle->p_Pointer) continue;
-		if (!handle->Get_IsAlive()) continue;
-		//if (entity->Get_Position().X > this->p_WindowSize->X) continue;
-		//if (entity->Get_Position().Y > this->p_WindowSize->Y) continue;
-
-		SDL_SetRenderDrawColor(this->p_Renderer, handle->Get_Color().Red, handle->Get_Color().Green, handle->Get_Color().Blue, handle->Get_Color().Alpha);
-		SDL_FRect entityRectangle = { handle->Get_Position().X, handle->Get_Position().Y, handle->Get_Size().X, handle->Get_Size().Y };
-
-		if (handle->Get_Sprite().IsImage)
-		{
-			SDL_RenderTexture(this->p_Renderer, handle->Get_Sprite().Texture, nullptr, &entityRectangle);
-		}
-		else
-		{
-			SDL_RenderFillRect(this->p_Renderer, &entityRectangle);
-		}
-	}
-
-	SDL_RenderPresent(this->p_Renderer);
-}
-
-void VX::Game::loop()
-{
 	std::cout << "-------------------------------------------------------------------------" << '\n';
 
 	std::cout << "Game Launching: " << this->p_GameName << '\n';
@@ -440,6 +445,7 @@ void VX::Game::loop()
 
 	SDL_DestroyRenderer(this->p_Renderer);
 	SDL_DestroyWindow(this->p_Window);
+	SDL_Quit();
 
 	std::cout << "-------------------------------------------------------------------------" << '\n';
 }

@@ -34,7 +34,7 @@ namespace VX
 	public:
 		Parser(const std::string& filename);
 		bool parse();
-
+		
 		std::string& Get_FilePath();
 		WindowSize& Get_WindowSize();
 		Color& Get_WindowColor();

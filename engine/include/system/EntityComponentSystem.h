@@ -2,10 +2,6 @@
 
 #define _ENTITY_COMPONENT_SYSTEM
 
-#include <iostream>
-#include <string>
-#include <vector>
-#include <map>
 #include "Backend.h"
 
 #ifndef _WINDOW_THEME_TYPE
