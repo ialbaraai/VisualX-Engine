@@ -1,46 +1,46 @@
-#include <iostream>
-#include <fstream>
+#pragma once
+
 #include <vector>
 #include <string>
 #include <map>
+
 #include "Entity.h"
 #include "EntityComponentSystem.h"
-#pragma once
 
-class Parser
+namespace VX
 {
-public:
-	bool p_Compilable								  = false;
-	std::string p_Filepath							  = "";
-	size_t p_MIN_SIZE								  = 1;
+	class Parser
+	{
+	private:
+		bool p_Compilable = false;
+		std::string p_Filepath = "";
+		size_t p_MIN_SIZE = 1;
 
-	std::map<std::string, int> p_RESERVED_KEYWORDS	  = {};
-	std::vector<std::string> p_FILE_CONTENT           = {};
+		std::map<std::string, int> p_RESERVED_KEYWORDS = {};
+		std::vector<std::string> p_FILE_CONTENT = {};
 
-	WindowSize* p_WindowSize						  = new WindowSize(0, 0);
-	Color* p_WindowColor                              = new Color(0, 0, 0, 0);
+		WindowSize p_WindowSize;
+		Color p_WindowColor;
 
-	std::vector<Entity*> p_EntitiesInfo               = {};
-	std::string p_ScriptFilepath                      = "";
-};
+		std::vector<Entity> p_EntitiesInfo = {};
+		std::string p_ScriptFilepath = "";
 
-Parser* Parser_Init(const std::string& filename);
-void Parser_Pre_Init(Parser* parser, std::string nextFile);
+		std::vector<std::string>& GetLineInfo(const std::string& line, char splitter);
 
-std::vector<std::string> Parser_GetLineInfo(const std::string& line, char splitter);
+		void SetWindowData(const std::string& line);
+		void SetEntitiesData(const std::string& line);
+		void SetScriptData(const std::string& line);
 
-bool Parse(Parser* parser);
+	public:
+		Parser(const std::string& filename);
+		bool parse();
 
-void Parser_SetWindowData(Parser* parser, const std::string& line);
-void Parser_SetEntitiesData(Parser* parser, const std::string& line);
-void Parser_SetScriptData(Parser* parser, const std::string& line);
+		std::string& Get_FilePath();
+		WindowSize& Get_WindowSize();
+		Color& Get_WindowColor();
+		std::vector<Entity>& Get_Entities();
+		std::string& Get_Script();
 
-std::string Parser_GetFilePath(Parser* parser);
-WindowSize* Parser_GetWindowSize(Parser* parser);
-Color* Parser_GetWindowColor(Parser* parser);
-std::vector<Entity*> Parser_GetEntitiesInfo(Parser* parser);
-std::string Parser_GetScriptInfo(Parser* parser);
-
-void Parser_Clear(Parser* parser);
-
-void Parser_Destroy(Parser* parser);
+		void clear();
+	};
+}

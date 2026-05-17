@@ -1,16 +1,14 @@
 #include "../../include/utilities/VXLua.h"
 
-VX::LuaManager* VXLua_Init(const std::string& LuaFile)
-{
-	VX::LuaManager* Manager = new VX::LuaManager(LuaFile);
-
-	return Manager;
-}
-
-VX::LuaManager::LuaManager(const std::string& File)
+VX::LuaManager::LuaManager()
 {
 	this->LuaState.open_libraries(sol::lib::base, sol::lib::io, sol::lib::math, sol::lib::table, sol::lib::os);
-	this->File = File;
+	this->File = "";
+}
+VX::LuaManager::LuaManager(const char* luafile)
+{
+	this->LuaState.open_libraries(sol::lib::base, sol::lib::io, sol::lib::math, sol::lib::table, sol::lib::os);
+	this->File = luafile;
 }
 
 bool VX::LuaManager::LoadScript()
@@ -32,14 +30,5 @@ bool VX::LuaManager::LoadScript()
 	else
 	{
 		return false;
-	}
-}
-
-void VXLua_Destroy(VX::LuaManager*& Manager)
-{
-	if (Manager)
-	{
-		delete Manager;
-		Manager = nullptr;
 	}
 }

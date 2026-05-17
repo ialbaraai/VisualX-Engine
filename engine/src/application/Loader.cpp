@@ -20,9 +20,9 @@ VX::Loader VXLoader_Init(const bool& IsSDL)
 	return loader;
 }
 
-bool run(VX::Loader* Loader)
+bool VX::Loader::run()
 {
-	if (Loader->Get_IsSDL())
+	if (this->Get_IsSDL())
 	{
 		SDL_Window* window = SDL_CreateWindow("VX Loader", 400, 400, 0);
 
@@ -85,7 +85,7 @@ bool run(VX::Loader* Loader)
 			float deltaTime = (currentTick - previousTick) / 1000.0f;
 			accumulator += deltaTime;
 
-			Loader->Set_TimeTaken(Loader->Get_TimeTaken() + deltaTime);
+			this->Set_TimeTaken(this->Get_TimeTaken() + deltaTime);
 
 			while (SDL_PollEvent(&event))
 			{
@@ -96,9 +96,9 @@ bool run(VX::Loader* Loader)
 				}
 			}
 
-			loadingBarBg.w = (Loader->Get_TimeTaken() / 4500.0f) * 290.0f;
+			loadingBarBg.w = (this->Get_TimeTaken() / 4500.0f) * 290.0f;
 
-			if (Loader->Get_TimeTaken() >= 4500.0f)
+			if (this->Get_TimeTaken() >= 4500.0f)
 			{
 				is_running = false;
 			}

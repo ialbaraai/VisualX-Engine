@@ -9,14 +9,13 @@ namespace VX
 {
 	class LuaManager
 	{
-	private:
-		std::string File;
 	public:
+		std::string File;
 		sol::state LuaState;
-		LuaManager(const std::string& File);
+
+		LuaManager();
+		LuaManager(const char* luafile);
+
 		bool LoadScript();
 	};
 };
-
-VX::LuaManager* VXLua_Init(const std::string& LuaFile);
-void VXLua_Destroy(VX::LuaManager*& Manager);

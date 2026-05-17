@@ -2,8 +2,8 @@
 
 int main(void)
 {
-	VX::Engine Engine = VX_Init(1080, 607.5, vxm::Dark);
-	run(&Engine);
+	VX::Engine engine;
+	engine.run();
 	
 	return 0;
 }

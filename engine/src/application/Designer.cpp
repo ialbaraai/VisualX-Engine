@@ -1,9 +1,17 @@
 #include "../../include/application/Designer.h"
 
-Designer Designer_Init(const std::string& Filepath, vxm Theme)
+#include <iostream>
+#include <type_traits>
+#include <fstream>
+#include <filesystem>
+#include <string>
+#include <cstring>
+
+#include "../../include/system/Parser.h"
+
+VX::Designer::Designer(const std::string& Filepath, vxm Theme)
 {
-	Designer designer;
-	designer.p_Theme = Theme;
+	this->p_Theme = Theme;
 
 	if (Filepath.empty())
 	{
@@ -15,40 +23,37 @@ Designer Designer_Init(const std::string& Filepath, vxm Theme)
 			std::getline(std::cin >> std::ws, filepath);
 		} while (filepath.empty());
 
-		designer.p_Filepath = filepath;
+		this->p_Filepath = filepath;
 	}
 	else
 	{
-		designer.p_Filepath = Filepath;
+		this->p_Filepath = Filepath;
 	}
-
-	return designer;
 }
 
-void Design(Designer* designer)
+void VX::Designer::run()
 {
-	std::string filepath = designer->p_Filepath;
-	std::string title = "VX Editor - " + designer->p_Filepath;
+	std::string filepath = this->p_Filepath;
+	std::string title = "VX Editor - " + this->p_Filepath;
 	
-	designer->p_Window = SDL_CreateWindow(title.c_str(), 1440, 847, SDL_WINDOW_RESIZABLE);
+	this->p_Window = SDL_CreateWindow(title.c_str(), 1440, 847, SDL_WINDOW_RESIZABLE);
 
-	if (designer->p_Window)
+	if (this->p_Window)
 	{
 		SDL_Surface* surface = IMG_Load("assets/VX Engine.jpeg");
 
 		if (surface)
 		{
-			SDL_SetWindowIcon(designer->p_Window, surface);
+			SDL_SetWindowIcon(this->p_Window, surface);
 			SDL_DestroySurface(surface);
 		}
 
-		designer->p_Renderer = SDL_CreateRenderer(designer->p_Window, nullptr);
+		this->p_Renderer = SDL_CreateRenderer(this->p_Window, nullptr);
 
-		if (designer->p_Renderer)
+		if (this->p_Renderer)
 		{
 			IMGUI_CHECKVERSION();
 			ImGuiContext* context = ImGui::CreateContext();
-
 			ImGui::SetCurrentContext(context);
 
 			ImGuiIO& io = ImGui::GetIO();
@@ -62,7 +67,7 @@ void Design(Designer* designer)
 
 			bool IsDark = true;
 
-			if (designer->p_Theme == vxm::Dark)
+			if (this->p_Theme == vxm::Dark)
 			{
 				ImGui::StyleColorsDark();
 
@@ -74,7 +79,7 @@ void Design(Designer* designer)
 
 				IsDark = true;
 			}
-			else if (designer->p_Theme == vxm::Light)
+			else if (this->p_Theme == vxm::Light)
 			{
 				ImGui::StyleColorsLight();
 
@@ -93,53 +98,48 @@ void Design(Designer* designer)
 
 			ImFont* robotoFont = io.Fonts->AddFontFromFileTTF("assets/Roboto.ttf", 16.0f);
 
-			ImGui_ImplSDL3_InitForSDLRenderer(designer->p_Window, designer->p_Renderer);
-			ImGui_ImplSDLRenderer3_Init(designer->p_Renderer);
+			ImGui_ImplSDL3_InitForSDLRenderer(this->p_Window, this->p_Renderer);
+			ImGui_ImplSDLRenderer3_Init(this->p_Renderer);
 
 			bool is_running = true;
 			SDL_Event event;
 
-			Parser* parser = Parser_Init(filepath);
+			Parser parser(filepath);
 
-			SDL_Texture* GameScene = SDL_CreateTexture(designer->p_Renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 800, 600);
+			SDL_Texture* GameScene = SDL_CreateTexture(this->p_Renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, 800, 600);
 			ImVec2 sceneOffset = { 0, 0 };
 
 			Entity* Target = nullptr;
 			size_t TargetIndex = -1;
 
-			Color* SceneBackgroundColors = new Color(0, 0, 0, 255);
+			Color SceneBackgroundColors(0, 0, 0, 255);
 
-			std::vector<Entity*> entities = {};
+			std::vector<Entity> entities = {};
 			std::string IntegratedScriptFilepath = "";
 
-			if (Parse(parser))
+			if (parser.parse())
 			{
-				WindowSize* gameSceneSize = Parser_GetWindowSize(parser);
-				Color* ParsedSceneBackgroundColors = Parser_GetWindowColor(parser);
-				entities = Parser_GetEntitiesInfo(parser);
-				IntegratedScriptFilepath = Parser_GetScriptInfo(parser);
+				WindowSize& gameSceneSize = parser.Get_WindowSize();
+				Color& ParsedSceneBackgroundColors = parser.Get_WindowColor();
+				entities = parser.Get_Entities();
+				IntegratedScriptFilepath = parser.Get_Script();
 
-				SceneBackgroundColors->Red = ParsedSceneBackgroundColors->Red;
-				SceneBackgroundColors->Green = ParsedSceneBackgroundColors->Green;
-				SceneBackgroundColors->Blue = ParsedSceneBackgroundColors->Blue;
-				SceneBackgroundColors->Alpha = ParsedSceneBackgroundColors->Alpha; // doesn't change anything, but just in case
+				SceneBackgroundColors.Red = ParsedSceneBackgroundColors.Red;
+				SceneBackgroundColors.Green = ParsedSceneBackgroundColors.Green;
+				SceneBackgroundColors.Blue = ParsedSceneBackgroundColors.Blue;
+				SceneBackgroundColors.Alpha = ParsedSceneBackgroundColors.Alpha;
 
-				int SceneWidth = gameSceneSize->X < 500 ? 500 : gameSceneSize->X;
-				int SceneHeight = gameSceneSize->Y < 500 ? 500 : gameSceneSize->Y;
+				int SceneWidth = gameSceneSize.X < 500 ? 500 : gameSceneSize.X;
+				int SceneHeight = gameSceneSize.Y < 500 ? 500 : gameSceneSize.Y;
 
-				for (Entity* entity : entities)
+				for (Entity& entity : entities)
 				{
-					SpriteComponent::Apply(&entity->Get_Sprite(), designer->p_Renderer);
+					SpriteComponent::Apply(&entity.Get_Sprite(), this->p_Renderer);
 				}
 
 				SDL_DestroyTexture(GameScene);
-				GameScene = SDL_CreateTexture(designer->p_Renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, SceneWidth, SceneHeight);
-
-				delete gameSceneSize;
-				delete ParsedSceneBackgroundColors;
+				GameScene = SDL_CreateTexture(this->p_Renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, SceneWidth, SceneHeight);
 			}
-
-			Parser_Destroy(parser);
 
 			SDL_SetTextureBlendMode(GameScene, SDL_BLENDMODE_BLEND);
 
@@ -148,7 +148,7 @@ void Design(Designer* designer)
 			while (is_running)
 			{
 				int WindowWidth, WindowHeight;
-				SDL_GetWindowSize(designer->p_Window, &WindowWidth, &WindowHeight);
+				SDL_GetWindowSize(this->p_Window, &WindowWidth, &WindowHeight);
 
 				float SceneWidth, SceneHeight;
 				SDL_GetTextureSize(GameScene, &SceneWidth, &SceneHeight);
@@ -174,12 +174,11 @@ void Design(Designer* designer)
 							{
 								for (size_t i = 0; i < entities.size(); i++)
 								{
-									if (entities[i] == Target)
+									if (&entities[i] == Target)
 									{
-										delete entities[i];
 										entities.erase(entities.begin() + i);
-
-										Target = new Entity(-1, "", Position(), Size(), Color(), SpriteComponent(false, ""));
+										Target = nullptr;
+										TargetIndex = -1;
 									}
 								}
 							}
@@ -194,7 +193,7 @@ void Design(Designer* designer)
 
 				ImTextureID SceneId = (ImTextureID)GameScene;
 
-				int Red, Green, Blue, Alpha;
+				int Red = 0, Green = 0, Blue = 0, Alpha = 0;
 
 				if (Target)
 				{
@@ -222,18 +221,16 @@ void Design(Designer* designer)
 
 				for (size_t index = 0; index < entities.size(); index++)
 				{
-					Entity* entity = entities.at(index);
-
-					if (!entity) continue;
+					Entity& entity = entities.at(index);
 
 					if (index >= 1)
 					{
 						ImGui::Dummy(ImVec2(0.0f, 2.5f));
 					}
 
-					if (ImGui::Selectable(entity->Get_Name().c_str(), Target == entity))
+					if (ImGui::Selectable(entity.Get_Name().c_str(), Target == &entity))
 					{
-						Target = entity;
+						Target = &entity;
 						TargetIndex = index;
 
 						Red = Target->Get_Color().Red;
@@ -419,7 +416,7 @@ void Design(Designer* designer)
 						if (ImGui::Button("Apply"))
 						{
 							Target->Get_Sprite().FilePath = NewEntityImageFilepathBuff;
-							SpriteComponent::Apply(&Target->Get_Sprite(), designer->p_Renderer);
+							SpriteComponent::Apply(&Target->Get_Sprite(), this->p_Renderer);
 						}
 						ImGui::PopStyleColor(3);
 					}
@@ -441,12 +438,12 @@ void Design(Designer* designer)
 					{
 						for (size_t i = 0; i < entities.size(); i++)
 						{
-							if (entities[i] == Target)
+							if (&entities[i] == Target)
 							{
-								delete entities[i];
 								entities.erase(entities.begin() + i);
 
 								Target = nullptr;
+								TargetIndex = -1;
 							}
 						}
 					}
@@ -507,20 +504,21 @@ void Design(Designer* designer)
 							ImVec2 TextureMouse(LocalMouse.x * ScaleX, LocalMouse.y * ScaleY);
 
 							Target = nullptr;
+							TargetIndex = -1;
 
 							for (size_t i = 0; i < entities.size(); i++)
 							{
-								Entity* ent = entities[i];
+								Entity& ent = entities[i];
 
-								float ex = ent->Get_Position().X;
-								float ey = ent->Get_Position().Y;
-								float ew = ent->Get_Size().X;
-								float eh = ent->Get_Size().Y;
+								float ex = ent.Get_Position().X;
+								float ey = ent.Get_Position().Y;
+								float ew = ent.Get_Size().X;
+								float eh = ent.Get_Size().Y;
 
 								if (TextureMouse.x >= ex && TextureMouse.x <= ex + ew &&
 									TextureMouse.y >= ey && TextureMouse.y <= ey + eh)
 								{
-									Target = ent;
+									Target = &ent;
 									TargetIndex = i;
 									break;
 								}
@@ -584,15 +582,15 @@ void Design(Designer* designer)
 				if (SceneWidth != BackgroundWidth || SceneHeight != BackgroundHeight)
 				{
 					SDL_DestroyTexture(GameScene);
-					GameScene = SDL_CreateTexture(designer->p_Renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, BackgroundWidth, BackgroundHeight);
+					GameScene = SDL_CreateTexture(this->p_Renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_TARGET, BackgroundWidth, BackgroundHeight);
 					SDL_GetTextureSize(GameScene, &SceneWidth, &SceneHeight);
 				}
 
 				ImGui::EndGroup();
 
-				int BackgroundRed = (int)SceneBackgroundColors->Red;
-				int BackgroundGreen = (int)SceneBackgroundColors->Green;
-				int BackgroundBlue = (int)SceneBackgroundColors->Blue;
+				int BackgroundRed = (int)SceneBackgroundColors.Red;
+				int BackgroundGreen = (int)SceneBackgroundColors.Green;
+				int BackgroundBlue = (int)SceneBackgroundColors.Blue;
 
 				ImGui::Dummy(ImVec2(0.0f, 5.0f));
 				ImGui::Separator();
@@ -624,14 +622,14 @@ void Design(Designer* designer)
 				ImGui::DragInt("##WindowBlue", &BackgroundBlue, 1, 0, 255, "%d");
 				ImGui::PopItemWidth();
 
-				if (SceneBackgroundColors->Red != (Uint32)BackgroundRed)
-					SceneBackgroundColors->Red = (Uint32)BackgroundRed;
+				if (SceneBackgroundColors.Red != (Uint32)BackgroundRed)
+					SceneBackgroundColors.Red = (Uint32)BackgroundRed;
 
-				if (SceneBackgroundColors->Green != (Uint32)BackgroundGreen)
-					SceneBackgroundColors->Green = (Uint32)BackgroundGreen;
+				if (SceneBackgroundColors.Green != (Uint32)BackgroundGreen)
+					SceneBackgroundColors.Green = (Uint32)BackgroundGreen;
 
-				if (SceneBackgroundColors->Blue != (Uint32)BackgroundBlue)
-					SceneBackgroundColors->Blue = (Uint32)BackgroundBlue;
+				if (SceneBackgroundColors.Blue != (Uint32)BackgroundBlue)
+					SceneBackgroundColors.Blue = (Uint32)BackgroundBlue;
 
 				ImGui::EndGroup();
 
@@ -665,7 +663,7 @@ void Design(Designer* designer)
 					static float NewEntityXSize = 0.0f;
 					static float NewEntityYSize = 0.0f;
 
-					static Uint32 NewEntityRed, NewEntityGreen, NewEntityBlue = 0;
+					static Uint32 NewEntityRed = 0, NewEntityGreen = 0, NewEntityBlue = 0;
 
 					ImGui::Text("Name");
 					ImGui::SameLine();
@@ -773,15 +771,15 @@ void Design(Designer* designer)
 							bool isNameUsed = false;
 							bool isIdUsed = false;
 
-							for (Entity* entity : entities)
+							for (Entity& entity : entities)
 							{
-								if (entity->Get_Name() == std::string(NewEntityNameBuff))
+								if (entity.Get_Name() == std::string(NewEntityNameBuff))
 								{
 									isNameUsed = true;
 									break;
 								}
 
-								if (entity->Get_Id() == NewEntityId)
+								if (entity.Get_Id() == NewEntityId)
 								{
 									isIdUsed = true;
 									break;
@@ -800,18 +798,20 @@ void Design(Designer* designer)
 							{
 								isCreateError = false;
 
-								Entity* NewEntity = new Entity(NewEntityId, std::string(NewEntityNameBuff), Position(NewEntityXPosition, NewEntityYPosition), Size(NewEntityXSize, NewEntityYSize), Color(NewEntityRed, NewEntityGreen, NewEntityBlue, (Uint32)255), SpriteComponent(NewEntityIsImage, std::string(NewEntityImageFilepathBuff)));
+								Entity NewEntity(NewEntityId, std::string(NewEntityNameBuff), Position(NewEntityXPosition, NewEntityYPosition), Size(NewEntityXSize, NewEntityYSize), Color(NewEntityRed, NewEntityGreen, NewEntityBlue, (Uint32)255), SpriteComponent(NewEntityIsImage, std::string(NewEntityImageFilepathBuff)));
 
 								if (NewEntityIsImage)
 								{
-									SpriteComponent::Apply(&NewEntity->Get_Sprite(), designer->p_Renderer);
+									SpriteComponent::Apply(&NewEntity.Get_Sprite(), this->p_Renderer);
 								}
 								else
 								{
-									NewEntity->Get_Sprite().Texture = nullptr;
+									NewEntity.Get_Sprite().Texture = nullptr;
 								}
 
 								entities.push_back(NewEntity);
+								Target = nullptr;
+								TargetIndex = -1;
 
 								NewEntityId = 0;
 
@@ -821,7 +821,7 @@ void Design(Designer* designer)
 								NewEntityXSize = 0.0f;
 								NewEntityYSize = 0.0f;
 
-								NewEntityRed, NewEntityGreen, NewEntityBlue = 0;
+								NewEntityRed = 0, NewEntityGreen = 0, NewEntityBlue = 0;
 								TempRed = 0;
 								TempGreen = 0;
 								TempBlue = 0;
@@ -876,81 +876,81 @@ void Design(Designer* designer)
 
 				ImGui::Render();
 
-				SDL_SetRenderDrawColor(designer->p_Renderer, 0, 0, 0, 0);
-				SDL_RenderClear(designer->p_Renderer);
+				SDL_SetRenderDrawColor(this->p_Renderer, 0, 0, 0, 0);
+				SDL_RenderClear(this->p_Renderer);
 
-				SDL_SetRenderTarget(designer->p_Renderer, GameScene);
+				SDL_SetRenderTarget(this->p_Renderer, GameScene);
 				SDL_Rect ViewPort = { 0, 0, SceneWidth, SceneHeight };
-				SDL_SetRenderViewport(designer->p_Renderer, &ViewPort);
+				SDL_SetRenderViewport(this->p_Renderer, &ViewPort);
 
-				SDL_SetRenderScale(designer->p_Renderer, 1.0f, 1.0f);
+				SDL_SetRenderScale(this->p_Renderer, 1.0f, 1.0f);
 
-				SDL_SetRenderDrawColor(designer->p_Renderer, SceneBackgroundColors->Red, SceneBackgroundColors->Green, SceneBackgroundColors->Blue, 255);
-				SDL_RenderClear(designer->p_Renderer);
+				SDL_SetRenderDrawColor(this->p_Renderer, SceneBackgroundColors.Red, SceneBackgroundColors.Green, SceneBackgroundColors.Blue, 255);
+				SDL_RenderClear(this->p_Renderer);
 
-				for (Entity* entity : entities)
+				for (Entity& entity : entities)
 				{
-					if (entity == Target)
+					if (&entity == Target)
 					{
-						SDL_SetRenderDrawColor(designer->p_Renderer, 255, 215, 0, 255);
+						SDL_SetRenderDrawColor(this->p_Renderer, 255, 215, 0, 255);
 
 						SDL_FRect brect = {
-							static_cast<float>(entity->Get_Position().X - 2),
-							static_cast<float>(entity->Get_Position().Y - 2),
-							static_cast<float>(entity->Get_Size().X + 4),
-							static_cast<float>(entity->Get_Size().Y + 4)
+							static_cast<float>(entity.Get_Position().X - 2),
+							static_cast<float>(entity.Get_Position().Y - 2),
+							static_cast<float>(entity.Get_Size().X + 4),
+							static_cast<float>(entity.Get_Size().Y + 4)
 						};
 
-						SDL_RenderFillRect(designer->p_Renderer, &brect);
+						SDL_RenderFillRect(this->p_Renderer, &brect);
 					}
 
-					SDL_SetRenderDrawColor(designer->p_Renderer, entity->Get_Color().Red, entity->Get_Color().Green, entity->Get_Color().Blue, 255);
+					SDL_SetRenderDrawColor(this->p_Renderer, entity.Get_Color().Red, entity.Get_Color().Green, entity.Get_Color().Blue, 255);
 					SDL_FRect rect = {
-						static_cast<float>(entity->Get_Position().X),
-						static_cast<float>(entity->Get_Position().Y),
-						static_cast<float>(entity->Get_Size().X),
-						static_cast<float>(entity->Get_Size().Y)
+						static_cast<float>(entity.Get_Position().X),
+						static_cast<float>(entity.Get_Position().Y),
+						static_cast<float>(entity.Get_Size().X),
+						static_cast<float>(entity.Get_Size().Y)
 					};
 
-					if (entity->Get_Sprite().IsImage)
+					if (entity.Get_Sprite().IsImage)
 					{
-						if (entity->Get_Sprite().Texture)
+						if (entity.Get_Sprite().Texture)
 						{
-							SDL_RenderTexture(designer->p_Renderer, entity->Get_Sprite().Texture, nullptr, &rect);
+							SDL_RenderTexture(this->p_Renderer, entity.Get_Sprite().Texture, nullptr, &rect);
 						}
 						else
 						{
-							SDL_RenderFillRect(designer->p_Renderer, &rect);
+							SDL_RenderFillRect(this->p_Renderer, &rect);
 						}
 					}
 					else
 					{
-						SDL_RenderFillRect(designer->p_Renderer, &rect);
+						SDL_RenderFillRect(this->p_Renderer, &rect);
 					}
 				}
 
-				SDL_SetRenderTarget(designer->p_Renderer, nullptr);
+				SDL_SetRenderTarget(this->p_Renderer, nullptr);
 				int WindowW, WindowH;
-				SDL_GetWindowSize(designer->p_Window, &WindowW, &WindowH);
+				SDL_GetWindowSize(this->p_Window, &WindowW, &WindowH);
 
 				SDL_Rect WindowViewPort = { 0, 0, WindowW, WindowH };
-				SDL_SetRenderViewport(designer->p_Renderer, &WindowViewPort);
-				SDL_SetRenderScale(designer->p_Renderer, 1.0f, 1.0f);
+				SDL_SetRenderViewport(this->p_Renderer, &WindowViewPort);
+				SDL_SetRenderScale(this->p_Renderer, 1.0f, 1.0f);
 
 				if (ImGui::GetDrawData())
 				{
-					ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), designer->p_Renderer);
+					ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), this->p_Renderer);
 				}
 
-				SDL_RenderPresent(designer->p_Renderer);
+				SDL_RenderPresent(this->p_Renderer);
 			}
 
-			WindowSize* windowSize = new WindowSize();
-			SDL_GetTextureSize(GameScene, &windowSize->X, &windowSize->Y);
-
-			Apply(designer, windowSize, SceneBackgroundColors, IntegratedScriptFilepath, entities);
-
 			Target = nullptr;
+
+			WindowSize windowSize;
+			SDL_GetTextureSize(GameScene, &windowSize.X, &windowSize.Y);
+
+			this->apply(windowSize, SceneBackgroundColors, IntegratedScriptFilepath, entities);
 
 			std::ifstream scriptCheck;
 			scriptCheck.open(IntegratedScriptFilepath);
@@ -971,7 +971,7 @@ void Design(Designer* designer)
 
 				if (scriptApply.is_open())
 				{
-					scriptApply << "function Start()\n\nend\n\nfunction Loop()\n\nend\n";
+					scriptApply << "function Start()\n\t\nend\n\nfunction Loop()\n\t\nend\n";
 					scriptApply.close();
 				}
 			}
@@ -986,7 +986,7 @@ void Design(Designer* designer)
 			if (outputFile.is_open())
 			{
 
-				for (std::string line : designer->p_Data)
+				for (std::string line : this->p_Data)
 				{
 					outputFile << line << '\n';
 				}
@@ -1022,7 +1022,7 @@ void Design(Designer* designer)
 
 					i_GamesFile.close();
 
-					games.push_back(designer->p_Filepath);
+					games.push_back(this->p_Filepath);
 
 					std::ofstream o_GamesFile;
 					o_GamesFile.open("games.txt", std::ios::out | std::ios::trunc);
@@ -1038,11 +1038,6 @@ void Design(Designer* designer)
 					}
 				}
 
-				for (Entity* ent : entities)
-				{
-					delete ent;
-				}
-
 				entities.clear();
 			}
 
@@ -1052,8 +1047,12 @@ void Design(Designer* designer)
 			ImGui_ImplSDL3_Shutdown();
 			ImGui::DestroyContext();
 
-			delete SceneBackgroundColors;
-			delete windowSize;
+			SDL_DestroyRenderer(this->p_Renderer);
+			SDL_DestroyWindow(this->p_Window);
+		}
+		else
+		{
+			SDL_DestroyWindow(this->p_Window);
 		}
 	}
 	else
@@ -1062,34 +1061,28 @@ void Design(Designer* designer)
 	}
 }
 
-void Apply(Designer* designer, WindowSize* windowSize, Color* windowColor, const std::string& scriptFilepath, const std::vector<Entity*>& entities)
+void VX::Designer::apply(const WindowSize& windowSize, const Color& windowColor, const std::string& scriptFilepath, std::vector<Entity>& entities)
 {
-	designer->p_Data.clear();
+	this->p_Data.clear();
 
-	designer->p_Data.push_back(std::to_string(windowSize->X) + "," + std::to_string(windowSize->Y) + "," + std::to_string(windowColor->Red) + "," + std::to_string(windowColor->Green) + "," + std::to_string(windowColor->Blue));
-	designer->p_Data.push_back("$/EOWDTED/$");
+	this->p_Data.push_back(std::to_string(windowSize.X) + "," + std::to_string(windowSize.Y) + "," + std::to_string(windowColor.Red) + "," + std::to_string(windowColor.Green) + "," + std::to_string(windowColor.Blue));
+	this->p_Data.push_back("$/EOWDTED/$");
 
-	for (Entity* entity : entities)
+	for (Entity& entity : entities)
 	{
-		const std::string entityName = entity->Get_Name();
-		const int entityId = entity->Get_Id();
-		const Position& entityPos = entity->Get_Position();
-		const Size& entitySize = entity->Get_Size();
-		const Color& entityColor = entity->Get_Color();
-		const SpriteComponent& spriteComponent = entity->Get_Sprite();
+		const std::string entityName = entity.Get_Name();
+		const int entityId = entity.Get_Id();
+		const Position& entityPos = entity.Get_Position();
+		const Size& entitySize = entity.Get_Size();
+		const Color& entityColor = entity.Get_Color();
+		const SpriteComponent& spriteComponent = entity.Get_Sprite();
 
 		int isImage = spriteComponent.IsImage ? 1 : 0;
 
-		designer->p_Data.push_back(entityName + "," + std::to_string(entityId) + "," + std::to_string(entitySize.X) + "," + std::to_string(entitySize.Y) + "," + std::to_string(entityPos.X) + "," + std::to_string(entityPos.Y) + "," + std::to_string(entityColor.Red) + "," + std::to_string(entityColor.Green) + "," + std::to_string(entityColor.Blue) + "," + std::to_string(isImage) + "," + spriteComponent.GetPath());
+		this->p_Data.push_back(entityName + "," + std::to_string(entityId) + "," + std::to_string(entitySize.X) + "," + std::to_string(entitySize.Y) + "," + std::to_string(entityPos.X) + "," + std::to_string(entityPos.Y) + "," + std::to_string(entityColor.Red) + "," + std::to_string(entityColor.Green) + "," + std::to_string(entityColor.Blue) + "," + std::to_string(isImage) + "," + spriteComponent.GetPath());
 	}
 
-	designer->p_Data.push_back("$/EOEDTSFP/$");
-	designer->p_Data.push_back(scriptFilepath);
-	designer->p_Data.push_back("$/EOGD/$");
-}
-
-void Designer_Destroy(Designer* designer)
-{
-	SDL_DestroyRenderer(designer->p_Renderer);
-	SDL_DestroyWindow(designer->p_Window);
+	this->p_Data.push_back("$/EOEDTSFP/$");
+	this->p_Data.push_back(scriptFilepath);
+	this->p_Data.push_back("$/EOGD/$");
 }

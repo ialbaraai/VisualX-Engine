@@ -1,56 +1,62 @@
 ﻿#include "../../include/application/Engine.h"
 
-VX::Engine VX_Init(vxs Width, vxs Height, vxm Theme)
-{
-	std::cout << "Initializing\n";
-	VX::Engine enginePointer;
-	enginePointer.choice = '\0';
-	enginePointer.input = "";
-	enginePointer.width = Width;
-	enginePointer.height = Height;
-	enginePointer.theme = Theme;
+#include <iostream>
+#include <vector>
+#include <iomanip>
+#include <algorithm>
+#include <fstream>
+#include <cstring>
 
-	std::cout << "Initialized engine, initializing sdl\n";
+#include <ctype.h>
+
+#include "../../include/application/Game.h"
+#include "../../include/application/Designer.h"
+#include "../../include/application/Loader.h"
+#include "../../include/system/Parser.h"
+
+void __VX__Run__Design__(const vxm theme, const std::string& filename = "");
+bool __VX__Run__Play__(const std::string& filename = "");
+
+VX::Engine::Engine()
+{
+	this->choice = '\0';
+	this->input = "";
+	this->width = 1000;
+	this->height = 600;
+	this->theme = vxm::Dark;
 
 	if (SDL_Init(SDL_INIT_VIDEO))
 	{
-		enginePointer.is_sdl = true;
-
-		std::cout << "Initialized sdl\n";
+		this->is_sdl = true;
 	}
 	else
 	{
-		enginePointer.is_sdl = false;
-
-		std::cout << "failed to initialize sdl\n";
+		this->is_sdl = false;
 	}
-
-	std::cout << "returning engine\n";
-	return enginePointer;
 }
 
-void run(VX::Engine* engine)
+void VX::Engine::run()
 {
-	if (!engine->is_sdl)
+	if (!this->is_sdl)
 	{
-		std::cout << "******************************* VX ENGINE *******************************" << '\n';
+		std::cout << "******************************* VX Engine *******************************" << '\n';
 
 		do
 		{
 			do
 			{
 				std::cout << "What would you like to do ([D]esign or [P]lay or [Q]uit): ";
-				std::getline(std::cin >> std::ws, engine->input);
-			} while (engine->input.empty());
+				std::getline(std::cin >> std::ws, this->input);
+			} while (this->input.empty());
 
-			if (engine->input.length() == 1)
+			if (this->input.length() == 1)
 			{
-				engine->choice = toupper(engine->input[0]);
+				this->choice = toupper(this->input[0]);
 
-				switch (engine->choice)
+				switch (this->choice)
 				{
 				case 'D':
-					__VX__Run__Design__(engine);
+					__VX__Run__Design__(this->theme);
 					break;
 				case 'P':
 					__VX__Run__Play__("");
@@ -67,26 +73,26 @@ void run(VX::Engine* engine)
 				std::cout << " - Enter only a character!" << '\n';
 			}
 
-			if (engine->choice == 'Q')
+			if (this->choice == 'Q')
 			{
 				do
 				{
 					std::cout << "Are you sure you want to quit? (Y/N): ";
-					std::getline(std::cin >> std::ws, engine->input);
-				} while (engine->input.empty());
+					std::getline(std::cin >> std::ws, this->input);
+				} while (this->input.empty());
 
-				engine->choice = toupper(engine->input[0]);
+				this->choice = toupper(this->input[0]);
 
-				if (engine->choice == 'Y')
+				if (this->choice == 'Y')
 				{
-					engine->choice = 'Q';
+					this->choice = 'Q';
 				}
 				else
 				{
-					engine->choice = '\0';
+					this->choice = '\0';
 				}
 			}
-		} while (engine->choice != 'Q');
+		} while (this->choice != 'Q');
 
 		std::cout << "-------------------------------------------------------------------------" << '\n';
 
@@ -94,29 +100,27 @@ void run(VX::Engine* engine)
 	}
 	else
 	{
-		std::cout << "into run with sdl open\n";
 		bool still_running = true;
 
-		std::cout << "initialized loader with sdl open\n";
-		VX::Loader loader = VXLoader_Init(engine->is_sdl);
-		std::cout << "runned loader with sdl open\n";
-		bool is_exit = run(&loader);
+		VX::Loader loader(this->is_sdl);
+		bool is_exit = loader.run();
 
 		if (is_exit)
 		{
-			std::cout << "loader forced exit\n";
 			return;
 		}
 
 		do
 		{
-			SDL_Window* window = SDL_CreateWindow("VX Engine", engine->width, engine->height, SDL_WINDOW_RESIZABLE);
+			//SDL_FlushEvents(SDL_EVENT_WINDOW_FIRST, SDL_EVENT_WINDOW_LAST);
+
+			SDL_Window* window = SDL_CreateWindow("VX Engine", this->width, this->height, SDL_WINDOW_RESIZABLE);
 
 			if (!window)
 			{
 				std::cerr << "SDL_CreateWindow Error: " << SDL_GetError() << '\n';
 
-				SDL_Quit();
+				return;
 			}
 			else
 			{
@@ -127,7 +131,8 @@ void run(VX::Engine* engine)
 					std::cout << "SDL_CreateRenderer Error: " << SDL_GetError() << '\n';
 
 					SDL_DestroyWindow(window);
-					SDL_Quit();
+					
+					return;
 				}
 				else
 				{
@@ -185,7 +190,6 @@ void run(VX::Engine* engine)
 
 					IMGUI_CHECKVERSION();
 					ImGuiContext* context = ImGui::CreateContext();
-
 					ImGui::SetCurrentContext(context);
 
 					ImGuiIO& io = ImGui::GetIO();
@@ -193,7 +197,7 @@ void run(VX::Engine* engine)
 
 					io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-					//ImFont* robotoFont = io.Fonts->AddFontFromFileTTF("Roboto.ttf", 16.0f);
+					ImFont* robotoFont = io.Fonts->AddFontFromFileTTF("assets/Roboto.ttf", 16.0f);
 
 					ImVec4 ImGuiCol_ControlButtonColor = { 0.25f, 0.25f, 0.25f, 1.0f };
 					ImVec4 ImGuiCol_ControlButtonHoveredColor = { 0.55f, 0.55f, 0.55f, 1.0f };
@@ -205,7 +209,7 @@ void run(VX::Engine* engine)
 
 					bool IsDark = true;
 
-					if (engine->theme == vxm::Dark)
+					if (this->theme == vxm::Dark)
 					{
 						ImGui::StyleColorsDark();
 
@@ -221,7 +225,7 @@ void run(VX::Engine* engine)
 
 						IsDark = true;
 					}
-					else if (engine->theme == vxm::Light)
+					else if (this->theme == vxm::Light)
 					{
 						ImGui::StyleColorsLight();
 
@@ -257,9 +261,15 @@ void run(VX::Engine* engine)
 					bool is_play = false;
 
 					bool is_launch_editor = false;
+					bool is_launch_game = false;
 
 					while (is_running)
 					{
+						// IN CASE OF EDITOR OR GAME WE MAKE `is_running = false`
+						// IN CASE OF LAUNCHING EDITOR WE MAKE `is_launch_editor = true` && `is_launch_game = false`
+						// IN CASE OF LAUNCHING GAME WE MAKE `is_launch_game = true` && `is_launch_editor = false`
+
+
 						int WindowWidth, WindowHeight;
 						SDL_GetWindowSize(window, &WindowWidth, &WindowHeight);
 
@@ -283,7 +293,7 @@ void run(VX::Engine* engine)
 						ImGui_ImplSDLRenderer3_NewFrame();
 						ImGui::NewFrame();
 
-						//ImGui::PushFont(robotoFont);
+						ImGui::PushFont(robotoFont);
 
 						ImGui::SetNextWindowSize(ImVec2(ImGui::GetMainViewport()->Size.x, 50.0f));
 						ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -294,7 +304,7 @@ void run(VX::Engine* engine)
 						ImGui::BeginGroup();
 
 						ImGui::PushItemWidth(50.0f);
-						ImGui::Text("VX Engine");
+						ImGui::Text("VX this");
 						ImGui::PopItemWidth();
 
 						ImGui::EndGroup();
@@ -341,9 +351,7 @@ void run(VX::Engine* engine)
 
 						ImGui::Text("Releases");
 
-						/*ImGui::BulletText("ImGui integration");
-						ImGui::BulletText("Lua scripting integration");*/
-						ImGui::BulletText("Idk! :)");
+						ImGui::BulletText("Lua scripting integration");
 
 						ImGui::End();
 
@@ -374,7 +382,7 @@ void run(VX::Engine* engine)
 											ImGui::Dummy(ImVec2(5.0f, 0.0f));
 											ImGui::SameLine();
 
-											if (engine->theme == vxm::Light)
+											if (this->theme == vxm::Light)
 											{
 												ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.75f, 0.75f, 1.0f));        // normal gray
 												ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.60f, 0.60f, 0.60f, 1.0f));  // slightly darker
@@ -389,7 +397,10 @@ void run(VX::Engine* engine)
 
 											if (ImGui::Button(game.c_str(), ImVec2((ImGui::GetMainViewport()->Size.x / 5) * 3.75, 50.0f)))
 											{
-												__VX__Run__Play__(game);
+												strncpy(buff, game.c_str(), sizeof(buff));
+												is_launch_game = true;
+                                                is_launch_editor = false;
+												is_running = false;
 											}
 											ImGui::PopStyleColor(3);
 
@@ -425,7 +436,7 @@ void run(VX::Engine* engine)
 											ImGui::Dummy(ImVec2(5.0f, 0.0f));
 											ImGui::SameLine();
 											
-											if (engine->theme == vxm::Light)
+											if (this->theme == vxm::Light)
 											{
 												ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.70f, 0.70f, 0.70f, 1.0f));        // normal gray
 												ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.55f, 0.55f, 0.55f, 1.0f));  // hover
@@ -442,6 +453,7 @@ void run(VX::Engine* engine)
 											{
 												strncpy(buff, game.c_str(), sizeof(buff));
 												is_launch_editor = true;
+                                                is_launch_game = false;
 												is_running = false;
 											}
 											ImGui::PopStyleColor(3);
@@ -504,6 +516,8 @@ void run(VX::Engine* engine)
 						if (ImGui::Button("Quit", ImVec2(75.0f, 0.0f)))
 						{
 							is_running = false;
+                            is_launch_editor = false;
+                            is_launch_game = false;
 							still_running = false;
 						}
 						
@@ -533,6 +547,7 @@ void run(VX::Engine* engine)
 							if (ImGui::Button("Create", buttonSize))
 							{
 								is_running = false;
+                                is_launch_game = false;
 								is_launch_editor = true;
 							}
 							ImGui::SameLine();
@@ -566,11 +581,9 @@ void run(VX::Engine* engine)
 
 							if (ImGui::Button("Play", buttonSize))
 							{
-								if (!__VX__Run__Play__(buff))
-								{
-									is_play_failed = true;
-									strncpy(failedBuf, buff, sizeof(buff));
-								}
+                                is_launch_editor = false;
+                                is_launch_game = true;
+                                is_running = false;
 							}
 							ImGui::SameLine();
 							if (ImGui::Button("Cancel", buttonSize))
@@ -587,7 +600,7 @@ void run(VX::Engine* engine)
 							ImGui::End();
 						}
 
-						//ImGui::PopFont();
+						ImGui::PopFont();
 
 						ImGui::Render();
 
@@ -600,6 +613,7 @@ void run(VX::Engine* engine)
 						}
 
 						SDL_RenderPresent(renderer);
+
 					}
 
 					ImGui_ImplSDLRenderer3_Shutdown();
@@ -611,55 +625,46 @@ void run(VX::Engine* engine)
 
 					if (is_launch_editor)
 					{
-						__VX__Run__Design__(engine, std::string(buff));
+						__VX__Run__Design__(this->theme, std::string(buff));
+					}
+					if (is_launch_game)
+					{
+						__VX__Run__Play__(std::string(buff));
+						
 					}
 				}
 			}
 		} while (still_running);
-
-		SDL_Quit();
 	}
 }
 
-void __VX__Run__Design__(VX::Engine* Engine, const std::string& filename)
+void __VX__Run__Design__(const vxm theme, const std::string& filename)
 {
-	Designer designer = Designer_Init(filename, Engine->theme);
-	Design(&designer);
-	Designer_Destroy(&designer);
+	VX::Designer designer(filename, theme);
+	designer.run();
 }
 
 bool __VX__Run__Play__(const std::string& filename)
 {
 	RunResult result = RunResult::NextScene;
 
-	Parser* parser = Parser_Init(filename);
+	VX::Parser parser(filename);
 
 	std::string nextFile = "";
 
-	if (Parse(parser))
+	if (parser.parse())
 	{
-		do
-		{
-			if (Parse(parser))
-			{
-				std::string name = Parser_GetFilePath(parser);
-				WindowSize* windowSize = Parser_GetWindowSize(parser);
-				Color* windowColor = Parser_GetWindowColor(parser);
-				std::vector<Entity*> Entities = Parser_GetEntitiesInfo(parser);
-				std::string script = Parser_GetScriptInfo(parser);
+		std::string name = parser.Get_FilePath();
+		WindowSize windowSize = parser.Get_WindowSize();
+		Color windowColor = parser.Get_WindowColor();
+		std::vector<Entity> Entities = parser.Get_Entities();
+		std::string script = parser.Get_Script();
 
-				Game* game = Game_Init(name, *windowSize, *windowColor, Entities, script);
-				GameLoop(game);
-				RunResult result = EndGame(game);
+		VX::Game game(name, windowSize, windowColor, Entities, script);
+		game.loop();
+		RunResult result = game.end();
 
-				Parser_Clear(parser);
-
-				if (result == RunResult::NextScene)
-				{
-					Parser_Pre_Init(parser, nextFile);
-				}
-			}
-		} while (!nextFile.empty());
+		parser.clear();
 
 		return true;
 	}
@@ -667,6 +672,4 @@ bool __VX__Run__Play__(const std::string& filename)
 	{
 		return false;
 	}
-
-	Parser_Destroy(parser);
 }

@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-std::shared_ptr<EntityHandler> EntitiesHandler::Create_Entity(int Id, const std::string& Name, const Position& Position, const Size& Size, const Color& Color, const SpriteComponent& SpriteComponent)
+std::shared_ptr<EntityHandler> EntitiesHandler::Create_Entity(int Id, const std::string& Name, Position& Position, Size& Size, Color& Color, SpriteComponent& SpriteComponent)
 {
 	std::shared_ptr<Entity> entity = std::make_shared<Entity>(Id, Name, Position, Size, Color, SpriteComponent);
 	std::shared_ptr<EntityHandler> handler = std::make_shared<EntityHandler>();

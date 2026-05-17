@@ -14,60 +14,58 @@
 #include "../system/EntitiesHandler.h"
 #include "../utilities/VXLua.h"
 
-class Game
+namespace VX
 {
-private:
-	WindowSize* p_WindowSize = nullptr;
-	Color* p_WindowColor = nullptr;
-	SDL_Window* p_Window;
-	SDL_Renderer* p_Renderer;
+	class Game
+	{
+	private:
+		WindowSize p_WindowSize = WindowSize();
+		Color p_WindowColor = Color();
+		SDL_Window* p_Window;
+		SDL_Renderer* p_Renderer;
 
-	float p_MouseX;
-	float p_MouseY;
-public:
-	std::string p_GameName;
-	std::string p_WindowTitle;
+		float p_MouseX;
+		float p_MouseY;
 
-	double p_FPS;
-	double p_FrameDuration;
+		std::string p_GameName;
+		std::string p_WindowTitle;
 
-	float p_RunTime;
+		double p_FPS;
+		double p_FrameDuration;
 
-	bool p_IsMouseLeftHeld = false;
-	bool p_IsMouseRightHeld = false;
-	bool p_IsMouseMiddleHeld = false;
+		float p_RunTime;
 
-	bool p_IsMouseLeftDown = false;
-	bool p_IsMouseLeftUp = false;
+		bool p_IsMouseLeftHeld = false;
+		bool p_IsMouseRightHeld = false;
+		bool p_IsMouseMiddleHeld = false;
 
-	bool p_IsMouseRightDown = false;
-	bool p_IsMouseRightUp = false;
+		bool p_IsMouseLeftDown = false;
+		bool p_IsMouseLeftUp = false;
 
-	bool p_IsMouseMiddleDown = false;
-	bool p_IsMouseMiddleUp = false;
+		bool p_IsMouseRightDown = false;
+		bool p_IsMouseRightUp = false;
 
-	std::vector<Entity*> p_Entities = {};
-	EntitiesHandler p_EntitiesHandler;
+		bool p_IsMouseMiddleDown = false;
+		bool p_IsMouseMiddleUp = false;
 
-	std::unordered_set<SDL_Keycode> p_PreviousKeys = {};
-	std::unordered_set<SDL_Keycode> p_CurrentKeys = {};
+		std::vector<Entity> p_Entities = {};
+		EntitiesHandler p_EntitiesHandler;
 
-	bool p_IsRunning;
+		std::unordered_set<SDL_Keycode> p_PreviousKeys = {};
+		std::unordered_set<SDL_Keycode> p_CurrentKeys = {};
 
-	VX::LuaManager* p_LuaManager = nullptr;
+		bool p_IsRunning;
 
-	std::string p_NextFile;
+		VX::LuaManager p_LuaManager;
+	public:
+		Game(const std::string& WindowTitle, const WindowSize& size, const Color& color, std::vector<Entity>& entities, const std::string& script);
+		~Game();
 
-	Game(const std::string& WindowTitle, const WindowSize& size, const Color& color, const std::vector<Entity*>& entities, const std::string& script);
-	~Game();
+		void HandleInput(const SDL_Event& event);
 
-	// Entity* FindEntityById(int id);
-	void HandleInput(const SDL_Event& event);
+		void HandleRender();
 
-	void HandleRender();
-};
-
-Game* Game_Init(const std::string& WindowTitle, const WindowSize& size, const Color& color, const std::vector<Entity*>& entities, const std::string& script);
-void GameLoop(Game* game);
-
-RunResult EndGame(Game* game);
+		void loop();
+		RunResult end();
+	};
+}

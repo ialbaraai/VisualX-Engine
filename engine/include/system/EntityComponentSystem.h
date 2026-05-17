@@ -256,7 +256,27 @@ public:
 	std::string FilePath = "";
 	SDL_Texture* Texture;
 
-	SpriteComponent(bool is_image, std::string filepath)
+	SpriteComponent()
+	{
+		this->IsImage = false;
+		this->FilePath = "";
+		this->Texture = nullptr;
+
+		if (this->IsImage)
+		{
+			SDL_Surface* surface = IMG_Load(this->FilePath.c_str());
+
+			if (!surface)
+			{
+				this->IsImage = false;
+				this->FilePath = "";
+			}
+
+			SDL_DestroySurface(surface);
+		}
+	}
+
+	SpriteComponent(bool is_image, const std::string& filepath)
 	{
 		this->IsImage = is_image;
 		this->FilePath = filepath;

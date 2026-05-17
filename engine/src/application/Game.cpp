@@ -1,59 +1,46 @@
 #include "../../include/application/Game.h"
 
-/*Entity* Game::FindEntityById(int id)
-{
-	for (Entity* entity : this->p_Entities)
-	{
-		if (entity->Get_Id() == id && entity->Get_IsAlive())
-		{
-			return entity;
-		}
-	}
-
-	return nullptr;
-}*/
-
-Game::Game(const std::string& WindowTitle, const WindowSize& size, const Color& color, const std::vector<Entity*>& entities, const std::string& script)
+VX::Game::Game(const std::string& WindowTitle, const WindowSize& size, const Color& color, std::vector<Entity>& entities, const std::string& script)
 {
 	this->p_GameName = WindowTitle;
 	this->p_WindowTitle = "VX Launcher - " + WindowTitle;
 
-	this->p_WindowSize = new WindowSize(size.X, size.Y);
-	this->p_WindowColor = new Color(color.Red, color.Green, color.Blue, color.Alpha);
+	this->p_WindowSize = WindowSize(size.X, size.Y);
+	this->p_WindowColor = Color(color.Red, color.Green, color.Blue, color.Alpha);
 
-	this->p_LuaManager = new VX::LuaManager(script);
+	this->p_LuaManager.File = script;
 	this->p_RunTime = 0.0f;
 
 	this->p_FPS = 60.0;
 	this->p_FrameDuration = 1000.0 / this->p_FPS;
 
-	this->p_LuaManager->LuaState.set_function("VX_ThirtyFPS", []() -> float { return 30.0f; });
-	this->p_LuaManager->LuaState.set_function("VX_FourtyEightFPS", []() -> float { return 48.0f; });
-	this->p_LuaManager->LuaState.set_function("VX_SixtyFPS", []() -> float { return 60.0f; });
-	this->p_LuaManager->LuaState.set_function("VX_OneTwentyFPS", []() -> float { return 120.0f; });
-	this->p_LuaManager->LuaState.set_function("VX_OneFourtyFourFPS", []() -> float { return 144.0f; });
-	this->p_LuaManager->LuaState.set_function("VX_TwoFourtyFPS", []() -> float { return 240.0f; });
+	this->p_LuaManager.LuaState.set_function("VX_ThirtyFPS", []() -> float { return 30.0f; });
+	this->p_LuaManager.LuaState.set_function("VX_FourtyEightFPS", []() -> float { return 48.0f; });
+	this->p_LuaManager.LuaState.set_function("VX_SixtyFPS", []() -> float { return 60.0f; });
+	this->p_LuaManager.LuaState.set_function("VX_OneTwentyFPS", []() -> float { return 120.0f; });
+	this->p_LuaManager.LuaState.set_function("VX_OneFourtyFourFPS", []() -> float { return 144.0f; });
+	this->p_LuaManager.LuaState.set_function("VX_TwoFourtyFPS", []() -> float { return 240.0f; });
 
-	this->p_LuaManager->LuaState.set_function("VX_SetFPS", [this](float FPS) {
+	this->p_LuaManager.LuaState.set_function("VX_SetFPS", [this](float FPS) {
 		
 		this->p_FPS = std::clamp((double)FPS, 0.0, 360.0);
 		this->p_FrameDuration = 1000.0 / this->p_FPS;
 		
 		});
 
-	sol::usertype<Position> position_type = this->p_LuaManager->LuaState.new_usertype<Position>("Position",
+	sol::usertype<Position> position_type = this->p_LuaManager.LuaState.new_usertype<Position>("Position",
 		sol::constructors<Position(), Position(float, float)>(),
 		"X", &Position::X,
 		"Y", &Position::Y
 	);
 
-	sol::usertype<Size> size_type = this->p_LuaManager->LuaState.new_usertype<Size>("Size",
+	sol::usertype<Size> size_type = this->p_LuaManager.LuaState.new_usertype<Size>("Size",
 		sol::constructors<Size(), Size(float, float)>(),
 		"X", &Size::X,
 		"Y", &Size::Y
 	);
 
-	sol::usertype<Color> color_type = this->p_LuaManager->LuaState.new_usertype<Color>("Color",
+	sol::usertype<Color> color_type = this->p_LuaManager.LuaState.new_usertype<Color>("Color",
 		sol::constructors<Color(), Color(float, float, float, float)>(),
 		"Red", &Color::Red,
 		"Green", &Color::Green,
@@ -61,13 +48,13 @@ Game::Game(const std::string& WindowTitle, const WindowSize& size, const Color& 
 		"Alpha", &Color::Alpha
 	);
 
-	sol::usertype<SpriteComponent> spriteComponent_type = this->p_LuaManager->LuaState.new_usertype<SpriteComponent>("SpriteComponent",
+	sol::usertype<SpriteComponent> spriteComponent_type = this->p_LuaManager.LuaState.new_usertype<SpriteComponent>("SpriteComponent",
 		sol::constructors<SpriteComponent(bool, std::string)>(),
 		"IsImage", &SpriteComponent::IsImage,
 		"GetPath", &SpriteComponent::GetPath
 	);
 
-	this->p_LuaManager->LuaState.new_usertype<EntityHandler>("Entity",
+	this->p_LuaManager.LuaState.new_usertype<EntityHandler>("Entity",
 		"Name", sol::property(&EntityHandler::Get_Name, &EntityHandler::Set_Name),
 		"Id", sol::property(&EntityHandler::Get_Id),
 		"IsAlive", sol::property(&EntityHandler::Get_IsAlive, &EntityHandler::Set_IsAlive),
@@ -89,18 +76,18 @@ Game::Game(const std::string& WindowTitle, const WindowSize& size, const Color& 
 		)
 	);
 
-	this->p_LuaManager->LuaState["WindowWidth"] = this->p_WindowSize->X;
-	this->p_LuaManager->LuaState["WindowHeight"] = this->p_WindowSize->Y;
+	this->p_LuaManager.LuaState["WindowWidth"] = this->p_WindowSize.X;
+	this->p_LuaManager.LuaState["WindowHeight"] = this->p_WindowSize.Y;
 	
-	sol::table keysTable = this->p_LuaManager->LuaState.create_table();
+	sol::table keysTable = this->p_LuaManager.LuaState.create_table();
 
-	sol::table entitiesTable = this->p_LuaManager->LuaState.create_table();
-	this->p_LuaManager->LuaState["Entities"] = entitiesTable;
+	sol::table entitiesTable = this->p_LuaManager.LuaState.create_table();
+	this->p_LuaManager.LuaState["Entities"] = entitiesTable;
 
-	sol::table mouseTable = this->p_LuaManager->LuaState.create_table();
+	sol::table mouseTable = this->p_LuaManager.LuaState.create_table();
 	mouseTable["X"] = 0;
 	mouseTable["Y"] = 0;
-	this->p_LuaManager->LuaState["Mouse"] = mouseTable;
+	this->p_LuaManager.LuaState["Mouse"] = mouseTable;
 
 	for (char c = 'a'; c <= 'z'; ++c)
 	{
@@ -129,19 +116,19 @@ Game::Game(const std::string& WindowTitle, const WindowSize& size, const Color& 
 	keysTable["ArrowDown"] = SDLK_DOWN;
 	keysTable["ArrowRight"] = SDLK_RIGHT;
 
-	this->p_LuaManager->LuaState["Keys"] = keysTable;
+	this->p_LuaManager.LuaState["Keys"] = keysTable;
 
-	this->p_LuaManager->LuaState.set_function("VX_CreateEntity", [this](int Id, const std::string& Name, const Position& Position, const Size& Size, const Color& Color, const SpriteComponent& SpriteComponent) {
+	this->p_LuaManager.LuaState.set_function("VX_CreateEntity", [this](int Id, const std::string& Name, Position& Position, Size& Size, Color& Color, SpriteComponent& SpriteComponent) {
 
 		std::shared_ptr<EntityHandler> handle = this->p_EntitiesHandler.Create_Entity(Id, Name, Position, Size, Color, SpriteComponent);
 
 		SpriteComponent::Apply(&handle->p_Pointer->Get_Sprite(), this->p_Renderer);
 		
-		this->p_LuaManager->LuaState["Entities"][Name] = handle;
+		this->p_LuaManager.LuaState["Entities"][Name] = handle;
 
 		return handle;
 		});
-	this->p_LuaManager->LuaState.set_function("VX_FindEntityById", [this](int Id) -> sol::optional<std::shared_ptr<EntityHandler>> {
+	this->p_LuaManager.LuaState.set_function("VX_FindEntityById", [this](int Id) -> sol::optional<std::shared_ptr<EntityHandler>> {
 		std::shared_ptr<EntityHandler> handle = this->p_EntitiesHandler.FindEntityById(Id);
 
 		if (handle && handle->p_Pointer->Get_IsAlive())
@@ -152,36 +139,36 @@ Game::Game(const std::string& WindowTitle, const WindowSize& size, const Color& 
 		return sol::nullopt;
 		});
 
-	this->p_LuaManager->LuaState.set_function("VX_IsMouseLeftDown", [this]() -> bool {return this->p_IsMouseLeftDown; });
-	this->p_LuaManager->LuaState.set_function("VX_IsMouseLeftUp", [this]() -> bool {return this->p_IsMouseLeftUp; });
-	this->p_LuaManager->LuaState.set_function("VX_IsMouseLeftHeld", [this]() -> bool {return this->p_IsMouseLeftHeld; });
-	this->p_LuaManager->LuaState.set_function("VX_IsMouseRightDown", [this]() -> bool {return this->p_IsMouseRightDown; });
-	this->p_LuaManager->LuaState.set_function("VX_IsMouseRightUp", [this]() -> bool {return this->p_IsMouseRightUp; });
-	this->p_LuaManager->LuaState.set_function("VX_IsMouseRightHeld", [this]() -> bool {return this->p_IsMouseRightHeld; });
-	this->p_LuaManager->LuaState.set_function("VX_IsMouseMiddleDown", [this]() -> bool {return this->p_IsMouseMiddleDown; });
-	this->p_LuaManager->LuaState.set_function("VX_IsMouseMiddleUp", [this]() -> bool {return this->p_IsMouseMiddleUp; });
-	this->p_LuaManager->LuaState.set_function("VX_IsMouseMiddleHeld", [this]() -> bool {return this->p_IsMouseMiddleHeld; });
+	this->p_LuaManager.LuaState.set_function("VX_IsMouseLeftDown", [this]() -> bool {return this->p_IsMouseLeftDown; });
+	this->p_LuaManager.LuaState.set_function("VX_IsMouseLeftUp", [this]() -> bool {return this->p_IsMouseLeftUp; });
+	this->p_LuaManager.LuaState.set_function("VX_IsMouseLeftHeld", [this]() -> bool {return this->p_IsMouseLeftHeld; });
+	this->p_LuaManager.LuaState.set_function("VX_IsMouseRightDown", [this]() -> bool {return this->p_IsMouseRightDown; });
+	this->p_LuaManager.LuaState.set_function("VX_IsMouseRightUp", [this]() -> bool {return this->p_IsMouseRightUp; });
+	this->p_LuaManager.LuaState.set_function("VX_IsMouseRightHeld", [this]() -> bool {return this->p_IsMouseRightHeld; });
+	this->p_LuaManager.LuaState.set_function("VX_IsMouseMiddleDown", [this]() -> bool {return this->p_IsMouseMiddleDown; });
+	this->p_LuaManager.LuaState.set_function("VX_IsMouseMiddleUp", [this]() -> bool {return this->p_IsMouseMiddleUp; });
+	this->p_LuaManager.LuaState.set_function("VX_IsMouseMiddleHeld", [this]() -> bool {return this->p_IsMouseMiddleHeld; });
 
-	this->p_LuaManager->LuaState.set_function("VX_GetKeyDown", [this](int KEY) {
+	this->p_LuaManager.LuaState.set_function("VX_GetKeyDown", [this](int KEY) {
 		return this->p_PreviousKeys.count(static_cast<SDL_Keycode>(KEY)) == 0 && this->p_CurrentKeys.count(static_cast<SDL_Keycode>(KEY)) != 0;
 		});
-	this->p_LuaManager->LuaState.set_function("VX_GetKeyUp", [this](int KEY) {
+	this->p_LuaManager.LuaState.set_function("VX_GetKeyUp", [this](int KEY) {
 		return this->p_PreviousKeys.count(static_cast<SDL_Keycode>(KEY)) != 0 && this->p_CurrentKeys.count(static_cast<SDL_Keycode>(KEY)) == 0;
 		});
-	this->p_LuaManager->LuaState.set_function("VX_GetKeyHeld", [this](int KEY) {
+	this->p_LuaManager.LuaState.set_function("VX_GetKeyHeld", [this](int KEY) {
 		return this->p_PreviousKeys.count(static_cast<SDL_Keycode>(KEY)) != 0 && this->p_CurrentKeys.count(static_cast<SDL_Keycode>(KEY)) != 0;
 		});
 
-	this->p_LuaManager->LuaState.set_function("VX_GetRuntime", [this]() {
+	this->p_LuaManager.LuaState.set_function("VX_GetRuntime", [this]() {
 		return this->p_RunTime;
 		});
-	this->p_LuaManager->LuaState.set_function("VX_Wait", [this](float duration) {
+	this->p_LuaManager.LuaState.set_function("VX_Wait", [this](float duration) {
 		SDL_Delay(duration * 1000);
 		});
 
-	this->p_LuaManager->LuaState.set_function("VX_Quit", [this]() {this->p_IsRunning = false; });
+	this->p_LuaManager.LuaState.set_function("VX_Quit", [this]() {this->p_IsRunning = false; });
 
-	this->p_Window = SDL_CreateWindow(this->p_WindowTitle.c_str(), this->p_WindowSize->X, this->p_WindowSize->Y, 0);
+	this->p_Window = SDL_CreateWindow(this->p_WindowTitle.c_str(), this->p_WindowSize.X, this->p_WindowSize.Y, 0);
 	
 	if (!this->p_Window)
 	{
@@ -189,15 +176,18 @@ Game::Game(const std::string& WindowTitle, const WindowSize& size, const Color& 
 		return;
 	}
 
-	this->p_Renderer = SDL_CreateRenderer(this->p_Window, nullptr); // SDL3 CreateRenderer takes a Window* and a const char*
+	this->p_Renderer = SDL_CreateRenderer(this->p_Window, nullptr);
 
 	if (!this->p_Renderer)
 	{
 		std::cerr << "SDL_CreateRenderer Error: " << SDL_GetError() << '\n';
+
+		SDL_DestroyWindow(this->p_Window);
+
 		return;
 	}
 
-	this->p_LuaManager->LuaState.set_function("VX_SetImage", [this](int Id, const std::string& NewImage) -> bool {
+	this->p_LuaManager.LuaState.set_function("VX_SetImage", [this](int Id, const std::string& NewImage) -> bool {
 		std::shared_ptr<EntityHandler> handle = this->p_EntitiesHandler.FindEntityById(Id);
 		
 		if (handle && handle->p_Pointer->Get_IsAlive())
@@ -226,7 +216,7 @@ Game::Game(const std::string& WindowTitle, const WindowSize& size, const Color& 
 		}
 		});
 
-	this->p_LuaManager->LuaState.set_function("VX_SetThumbnail", [this](const std::string& NewThumbnail) -> bool {
+	this->p_LuaManager.LuaState.set_function("VX_SetThumbnail", [this](const std::string& NewThumbnail) -> bool {
 
 		SDL_Surface* thumbnail = IMG_Load(NewThumbnail.c_str());
 
@@ -249,21 +239,21 @@ Game::Game(const std::string& WindowTitle, const WindowSize& size, const Color& 
 		}
 		});
 
-	for (Entity* entity : entities)
+	for (Entity& entity : entities)
 	{
-		if (!this->p_EntitiesHandler.FindEntityById(entity->Get_Id()))
+		if (!this->p_EntitiesHandler.FindEntityById(entity.Get_Id()))
 		{
-			std::shared_ptr<EntityHandler> handle = this->p_EntitiesHandler.Create_Entity(entity->Get_Id(), entity->Get_Name(), entity->Get_Position(), entity->Get_Size(), entity->Get_Color(), entity->Get_Sprite());
+			std::shared_ptr<EntityHandler> handle = this->p_EntitiesHandler.Create_Entity(entity.Get_Id(), entity.Get_Name(), entity.Get_Position(), entity.Get_Size(), entity.Get_Color(), entity.Get_Sprite());
 			SpriteComponent::Apply(&handle->p_Pointer->Get_Sprite(), this->p_Renderer);
 
-			this->p_LuaManager->LuaState["Entities"][entity->Get_Name()] = handle;
+			this->p_LuaManager.LuaState["Entities"][entity.Get_Name()] = handle;
 			// this->p_Entities.push_back(entity);
 		}
 	}
 
 	try
 	{
-		if (this->p_LuaManager->LoadScript())
+		if (this->p_LuaManager.LoadScript())
 		{
 			this->p_IsRunning = true;
 		}
@@ -276,43 +266,15 @@ Game::Game(const std::string& WindowTitle, const WindowSize& size, const Color& 
 		std::cerr << "This Talk Not Walk Error: Failed to load script: " << script << '\n';
 	}
 }
-Game::~Game()
+VX::Game::~Game()
 {
-	/*for (Entity* entity : this->p_Entities)
-	{
-		this->p_LuaManager->LuaState[entity->Get_Name()] = sol::nil;
-	}*/
-
-	if (this->p_LuaManager)
-	{
-		sol::table ents = this->p_LuaManager->LuaState["Entities"];
-		ents.clear();
-	}
-
-	/*for (Entity* entity : this->p_Entities)
-	{
-		delete entity;
-	}*/
+	sol::table ents = this->p_LuaManager.LuaState["Entities"];
+	ents.clear();
 
 	this->p_EntitiesHandler.Cleanup();
-
-	VXLua_Destroy(this->p_LuaManager);
-
-	delete this->p_WindowSize;
-	delete this->p_WindowColor;
-
-	SDL_DestroyRenderer(this->p_Renderer);
-	SDL_DestroyWindow(this->p_Window);
 }
 
-Game* Game_Init(const std::string& WindowTitle, const WindowSize& size, const Color& color, const std::vector<Entity*>& entities, const std::string& script)
-{
-	Game* game = new Game(WindowTitle, size, color, entities, script);
-
-	return game;
-}
-
-void Game::HandleInput(const SDL_Event& event)
+void VX::Game::HandleInput(const SDL_Event& event)
 {
 	if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
 	{
@@ -332,8 +294,8 @@ void Game::HandleInput(const SDL_Event& event)
 		this->p_MouseX = event.motion.x;
 		this->p_MouseY = event.motion.y;
 
-		this->p_LuaManager->LuaState["Mouse"]["X"] = this->p_MouseX;
-		this->p_LuaManager->LuaState["Mouse"]["Y"] = this->p_MouseY;
+		this->p_LuaManager.LuaState["Mouse"]["X"] = this->p_MouseX;
+		this->p_LuaManager.LuaState["Mouse"]["Y"] = this->p_MouseY;
 	}
 
 	if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
@@ -375,9 +337,9 @@ void Game::HandleInput(const SDL_Event& event)
 }
 
 
-void Game::HandleRender()
+void VX::Game::HandleRender()
 {
-	SDL_SetRenderDrawColor(this->p_Renderer, this->p_WindowColor->Red, this->p_WindowColor->Green, this->p_WindowColor->Blue, this->p_WindowColor->Alpha);
+	SDL_SetRenderDrawColor(this->p_Renderer, this->p_WindowColor.Red, this->p_WindowColor.Green, this->p_WindowColor.Blue, this->p_WindowColor.Alpha);
 	SDL_RenderClear(this->p_Renderer);
 
 	for (std::shared_ptr<EntityHandler>& handle : this->p_EntitiesHandler.entities)
@@ -404,18 +366,18 @@ void Game::HandleRender()
 	SDL_RenderPresent(this->p_Renderer);
 }
 
-void GameLoop(Game* game)
+void VX::Game::loop()
 {
 	std::cout << "-------------------------------------------------------------------------" << '\n';
 
-	std::cout << "Game Launching: " << game->p_GameName << '\n';
+	std::cout << "Game Launching: " << this->p_GameName << '\n';
 
 	SDL_Event event;
 	
 	Uint64 previousTick = SDL_GetTicks();
 	float accumulator = 0.0f;
 	
-	sol::protected_function start = game->p_LuaManager->LuaState["Start"];
+	sol::protected_function start = this->p_LuaManager.LuaState["Start"];
 
 	if (start.valid())
 	{
@@ -429,24 +391,22 @@ void GameLoop(Game* game)
 		}
 	}
 
-	while (game->p_IsRunning)
+	while (this->p_IsRunning)
 	{
 		Uint64 currentTick = SDL_GetTicks();
 		float deltaTime = (currentTick - previousTick) / 1000.0f;
 		accumulator += deltaTime;
 
-		game->p_RunTime += deltaTime;
+		this->p_RunTime += deltaTime;
 
 		while (SDL_PollEvent(&event))
 		{
-			ImGui_ImplSDL3_ProcessEvent(&event);
-
-			game->HandleInput(event);
+			this->HandleInput(event);
 		}
 
 		while (accumulator >= FIXED_TIME_STEP)
 		{
-			sol::protected_function loop = game->p_LuaManager->LuaState["Loop"];
+			sol::protected_function loop = this->p_LuaManager.LuaState["Loop"];
 
 			if (loop.valid())
 			{
@@ -460,30 +420,31 @@ void GameLoop(Game* game)
 				}
 			}
 
-			game->p_PreviousKeys = game->p_CurrentKeys;
+			this->p_PreviousKeys = this->p_CurrentKeys;
 
 			accumulator -= FIXED_TIME_STEP;
 		}
 
-		game->HandleRender();
+		this->HandleRender();
 
 		previousTick = SDL_GetTicks();
 
 		Uint64 duration = SDL_GetTicks() - currentTick;
 
 
-		if (duration < static_cast<Uint64>(game->p_FrameDuration))
+		if (duration < static_cast<Uint64>(this->p_FrameDuration))
 		{
-			SDL_Delay(static_cast<Uint64>(game->p_FrameDuration - duration));
+			SDL_Delay(static_cast<Uint64>(this->p_FrameDuration - duration));
 		}
 	}
+
+	SDL_DestroyRenderer(this->p_Renderer);
+	SDL_DestroyWindow(this->p_Window);
 
 	std::cout << "-------------------------------------------------------------------------" << '\n';
 }
 
-RunResult EndGame(Game* game)
+RunResult VX::Game::end()
 {
-	delete game;
-
 	return RunResult::Exit;
 }
