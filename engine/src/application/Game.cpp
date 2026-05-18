@@ -104,7 +104,7 @@ void VX::Game::HandleRender()
 void VX::Game::loop(const std::string& WindowTitle, const WindowSize& size, const Color& color, std::vector<Entity>& entities, const std::string& script)
 {
 	this->p_GameName = WindowTitle;
-	this->p_WindowTitle = "VX Launcher - " + WindowTitle;
+	this->p_WindowTitle = "VisualX Launcher - " + WindowTitle;
 
 	this->p_WindowSize = WindowSize(size.X, size.Y);
 	this->p_WindowColor = Color(color.Red, color.Green, color.Blue, color.Alpha);
