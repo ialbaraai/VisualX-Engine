@@ -1,2 +1,2 @@
-# VX-Engine-2.0
+# VisualX Engine
 A C++ GUI-based game engine
