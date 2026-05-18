@@ -42,7 +42,7 @@ int VX::Engine::run()
 			return 1;
 		}
 
-		SDL_Window* window = SDL_CreateWindow("VX Engine", this->width, this->height, SDL_WINDOW_RESIZABLE);
+		SDL_Window* window = SDL_CreateWindow("VisualX Engine", this->width, this->height, SDL_WINDOW_RESIZABLE);
 
 		if (!window)
 		{
