@@ -222,13 +222,13 @@ int VX::Engine::run()
 			ImGui::BeginGroup();
 
 			ImGui::PushItemWidth(50.0f);
-			ImGui::Text("VX this");
+			ImGui::Text("VisualX");
 			ImGui::PopItemWidth();
 
 			ImGui::EndGroup();
 
 			ImGui::SameLine();
-			ImGui::Dummy(ImVec2(ImGui::GetMainViewport()->Size.x - (75.0f * 3 + 10.0f * 2 + 50.0f), 0));
+			ImGui::Dummy(ImVec2(ImGui::GetMainViewport()->Size.x - (75.0f * 3 + 10.0f * 2 + 10.0f), 0));
 			ImGui::SameLine();
 
 			ImGui::BeginGroup();
@@ -407,20 +407,7 @@ int VX::Engine::run()
 			ImGui::SetNextWindowPos(ImVec2(0.0f, ImGui::GetMainViewport()->Size.y - 50.0f));
 			ImGui::Begin("Footer", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration);
 
-			ImGui::Dummy(ImVec2(0.0f, 5.0f));
-
-			ImGui::BeginGroup();
-
-			ImGui::PushItemWidth(150.0f);
-			io.FontGlobalScale = 0.5f;
-			ImGui::Text("Credits: Me. coffee. milk.");
-			io.FontGlobalScale = 1.0f;
-			ImGui::PopItemWidth();
-
-			ImGui::EndGroup();
-
-			ImGui::SameLine();
-			ImGui::Dummy(ImVec2(ImGui::GetMainViewport()->Size.x - (200.0f + 75.0f + 5.0f), 0));
+			ImGui::Dummy(ImVec2(ImGui::GetMainViewport()->Size.x - (75.0f + 30.0f), 5.0f));
 			ImGui::SameLine();
 
 			ImGui::BeginGroup();
