@@ -25,7 +25,7 @@ namespace VX
 		std::vector<Entity> p_EntitiesInfo = {};
 		std::string p_ScriptFilepath = "";
 
-		std::vector<std::string>& GetLineInfo(const std::string& line, char splitter);
+		std::vector<std::string> GetLineInfo(const std::string& line, char splitter);
 
 		void SetWindowData(const std::string& line);
 		void SetEntitiesData(const std::string& line);

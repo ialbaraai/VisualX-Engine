@@ -9,16 +9,15 @@
 
 #include <ctype.h>
 
+#include "../../include/system/Backend.h"
 #include "../../include/application/Game.h"
 #include "../../include/application/Designer.h"
 #include "../../include/application/Loader.h"
 #include "../../include/system/Parser.h"
 
+#define QUIT_SELECTION 0
 #define EDITOR_SELECTION 1
 #define GAME_SELECTION 2
-
-void __VX__Run__Design__(const vxm theme, const std::string& filename = "");
-bool __VX__Run__Play__(const std::string& filename = "");
 
 VX::Engine::Engine()
 {
@@ -187,8 +186,6 @@ int VX::Engine::run()
 		while (is_running)
 		{
 			// IN CASE OF EDITOR OR GAME WE MAKE `is_running = false`
-			// IN CASE OF LAUNCHING EDITOR WE MAKE `is_launch_editor = true` && `is_launch_game = false`
-			// IN CASE OF LAUNCHING GAME WE MAKE `is_launch_game = true` && `is_launch_editor = false`
 
 			int WindowWidth, WindowHeight;
 			SDL_GetWindowSize(window, &WindowWidth, &WindowHeight);
@@ -204,6 +201,7 @@ int VX::Engine::run()
 
 				if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
 				{
+					this->selection = QUIT_SELECTION;
 					is_running = false;
 					this->engine_running = false;
 				}
@@ -433,6 +431,7 @@ int VX::Engine::run()
 
 			if (ImGui::Button("Quit", ImVec2(75.0f, 0.0f)))
 			{
+				this->selection = QUIT_SELECTION;
 				is_running = false;
 				this->engine_running = false;
 			}
@@ -537,20 +536,25 @@ int VX::Engine::run()
 			designer.run();
 		}
 		if (this->selection == GAME_SELECTION)
-		{	
+		{
+			std::cout << "game selection mode!\n";
 			VX::Parser parser{std::string(buff)};
 
+			std::cout << "made parser!\n";
 			if (parser.parse())
 			{
+				std::cout << "read file: " << parser.Get_FilePath() << "!\n";
 				std::string name = parser.Get_FilePath();
 				WindowSize windowSize = parser.Get_WindowSize();
 				Color windowColor = parser.Get_WindowColor();
 				std::vector<Entity> Entities = parser.Get_Entities();
 				std::string script = parser.Get_Script();
+				std::cout << "retrieved data!\n";
 
 				VX::Game game;
+				std::cout << "made game!\n";
 				game.loop(name, windowSize, windowColor, Entities, script);
-				RunResult result = game.end();
+				std::cout << "ran game!\n";
 
 				parser.clear();
 			}

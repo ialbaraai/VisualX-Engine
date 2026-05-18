@@ -3,7 +3,7 @@
 #include <iostream>
 #include <fstream>
 
-std::vector<std::string>& VX::Parser::GetLineInfo(const std::string& line, char splitter)
+std::vector<std::string> VX::Parser::GetLineInfo(const std::string& line, char splitter)
 {
 	std::vector<std::string> output = {};
 
@@ -33,6 +33,8 @@ void VX::Parser::SetWindowData(const std::string& line)
 	{
 		std::vector<std::string> lineData = this->GetLineInfo(line, ',');
 
+		if (lineData.size() < 5) return;
+
 		this->p_WindowSize.X = std::stoi(lineData[0]);
 		this->p_WindowSize.Y = std::stoi(lineData[1]);
 
@@ -50,6 +52,8 @@ void VX::Parser::SetEntitiesData(const std::string& line)
 	try
 	{
 		std::vector<std::string> lineData = this->GetLineInfo(line, ',');
+
+		if (lineData.size() < 11) return;
 
 		std::string EntityName = lineData[0];
 		int EntityId = std::stoi(lineData[1]);
@@ -93,9 +97,11 @@ void VX::Parser::SetScriptData(const std::string& line)
 
 VX::Parser::Parser(const std::string& filename)
 {
-	this->p_RESERVED_KEYWORDS["$/EOWDTED/$"] = 1;
-	this->p_RESERVED_KEYWORDS["$/EOEDTSFP/$"] = 2;
-	this->p_RESERVED_KEYWORDS["$/EOGD/$"] = 3;
+	this->p_RESERVED_KEYWORDS = {
+		{"$/EOWDTED/$", 1},
+		{"$/EOEDTSFP/$", 2},
+		{"$/EOGD/$", 3}
+	};
 
 	if (filename.empty())
 	{
@@ -113,11 +119,13 @@ VX::Parser::Parser(const std::string& filename)
 
 bool VX::Parser::parse()
 {
+	std::cout << "into parse function!\n";
 	std::ifstream output;
 	output.open(this->p_Filepath);
 
 	if (output.is_open())
 	{
+		std::cout << "opened file!\n";
 		std::string curLine = "";
 
 		while (std::getline(output, curLine))
@@ -126,6 +134,7 @@ bool VX::Parser::parse()
 		}
 		
 		output.close();
+		std::cout << "read file data!\n";
 
 		try
 		{
@@ -179,8 +188,6 @@ bool VX::Parser::parse()
 			std::cerr << e.what() << std::endl;
 			return false;
 		}
-
-		return true;
 	}
 	else
 	{
@@ -188,6 +195,10 @@ bool VX::Parser::parse()
 		std::cout << "Couldn't open file path to parse..." << std::endl;
 		return false;
 	}
+
+	std::cout << "finished reading file data!\n";
+	
+	return true;
 }
 
 std::string& VX::Parser::Get_FilePath()

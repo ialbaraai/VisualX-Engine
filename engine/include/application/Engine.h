@@ -5,7 +5,6 @@
 #include <string>
 #include <stdbool.h>
 
-#include "../system/Backend.h"
 #include "../system/EntityComponentSystem.h"
 
 namespace VX

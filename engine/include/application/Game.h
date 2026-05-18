@@ -66,6 +66,5 @@ namespace VX
 		void HandleRender();
 
 		void loop(const std::string& WindowTitle, const WindowSize& size, const Color& color, std::vector<Entity>& entities, const std::string& script);
-		RunResult end();
 	};
 }

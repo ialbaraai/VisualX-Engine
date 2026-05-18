@@ -6,10 +6,7 @@ VX::Game::Game()
 }
 VX::Game::~Game()
 {
-	sol::table ents = this->p_LuaManager.LuaState["Entities"];
-	ents.clear();
 
-	this->p_EntitiesHandler.Cleanup();
 }
 
 void VX::Game::HandleInput(const SDL_Event& event)
@@ -443,14 +440,14 @@ void VX::Game::loop(const std::string& WindowTitle, const WindowSize& size, cons
 		}
 	}
 
+	sol::table ents = this->p_LuaManager.LuaState["Entities"];
+	ents.clear();
+
+	this->p_EntitiesHandler.Cleanup();
+
 	SDL_DestroyRenderer(this->p_Renderer);
 	SDL_DestroyWindow(this->p_Window);
 	SDL_Quit();
 
 	std::cout << "-------------------------------------------------------------------------" << '\n';
-}
-
-RunResult VX::Game::end()
-{
-	return RunResult::Exit;
 }
