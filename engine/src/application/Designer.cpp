@@ -39,7 +39,7 @@ void VX::Designer::run()
 	}
 
 	std::string filepath = this->p_Filepath;
-	std::string title = "VX Editor - " + this->p_Filepath;
+	std::string title = "VisualX Editor - " + this->p_Filepath;
 	
 	this->p_Window = SDL_CreateWindow(title.c_str(), 1440, 847, SDL_WINDOW_RESIZABLE);
 
